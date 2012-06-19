@@ -1,22 +1,29 @@
 #!/usr/bin/env python
 
 import boto, sys, time
+import itertools
 
 class ec2_session():
 
-    def __init__(self):
+    def __init__(self, polling_freq=5):
+        # uses ~/.boto
         self.conn = boto.connect_ec2()
+        # explicitly state keys
+        #self.conn = boto.EC2Connection('<aws access key>', '<aws secret key>')
         self.instance_names = self._init_name_id_dict()
-        #Constants
-        self._poll_secs = 5
+        self._poll_secs = polling_freq
 
     def _init_name_id_dict(self):
         reservations = self.conn.get_all_instances()
-        instances = {}
-        return dict([ (i.tags['Name'], i) 
+        return { i.tags['Name']: i
                      for r in reservations 
                      for i in r.instances 
-                     if 'Name' in i.tags ])
+                     if 'Name' in i.tags 
+                }
+
+    def verify_instance_names(self, instances):
+        for name in instances:
+            print ("%s: %r" % (name, name in self.instance_names) ) 
 
     def start_instance_names(self, instances):
         print ("Starting: %s" % instances)
@@ -38,15 +45,31 @@ class ec2_session():
                 i.update()
             instance_state = [i.state for i in instance_objs]
             print instance_state
-            finished = reduce( lambda accum, i: accum and (i==desired_state), 
-                               instance_state,
-                               True )
+            finished = reduce( lambda accum, i: accum and (i==desired_state)
+                             , instance_state
+                             , True )
     
 
 if __name__ == '__main__':
     e = ec2_session()
-    e.start_instance_names(['gateway', 'proxy'])
-    e.stop_instance_names (['gateway', 'proxy'])
+
+    def flatten_list( l ):
+        return list(itertools.chain.from_iterable(l) )
+
+    names = [ ['gateway', 'proxy']
+            , ['masterdb0', 'database1010']
+            , ['ql0uno', 'ql0dos1', 'ql0dos2']
+            , ['ql0index1']
+            , ['ql0service1', 'ql0app1']
+            ]
+    others = [ ['bh-linux', 'ql0james'] ]
+
+    for n in names:
+        e.verify_instance_names( n )
+        e.start_instance_names( n )
+        e,stop_instance_names( names.join())
+
+    e.stop_instance_names ( flatten_list( names ) ) 
 
 
 
