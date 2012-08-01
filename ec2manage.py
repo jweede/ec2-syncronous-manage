@@ -67,9 +67,8 @@ if __name__ == '__main__':
     for n in names:
         e.verify_instance_names( n )
         e.start_instance_names( n )
-        e,stop_instance_names( names.join())
 
-    e.stop_instance_names ( flatten_list( names ) ) 
+    #e.stop_instance_names ( flatten_list( names ) ) 
 
 
 
